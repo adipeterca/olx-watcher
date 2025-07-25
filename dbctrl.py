@@ -1,0 +1,117 @@
+#!/usr/bin/python3
+
+import sqlite3
+from datetime import datetime
+
+class DBController:
+    def __init__(self, db_path: str = "main.db"):
+        self.conn = sqlite3.connect(db_path)
+        self.conn.execute("PRAGMA foreign_keys = ON;") 
+        
+        cursor = self.conn.cursor()
+
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS products (
+            id TEXT PRIMARY KEY NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            url TEXT,
+            active BOOLEAN NOT NULL
+        );
+        ''')
+
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS price_history (
+            id TEXT NOT NULL,
+            price INTEGER NOT NULL,
+            currency TEXT NOT NULL,
+            timestamp TEXT NOT NULL, -- ISO 8601 datetime string
+            PRIMARY KEY (id, timestamp),
+            FOREIGN KEY (id) REFERENCES products(id)
+        );
+        ''')
+
+        self.conn.commit()
+
+    def add_product(self, id: int, title: str, description: str, url: str, active: bool, fail_on_existance: bool = False):
+        product = {
+            "id": id,
+            "title": title,
+            "description": description,
+            "url": url,
+            "active": active
+        }
+
+        cursor = self.conn.cursor()
+
+        try:
+            cursor.execute(
+                '''
+                INSERT INTO products (id, title, description, url, active)
+                VALUES (:id, :title, :description, :url, :active)
+                ''',
+                product
+            )
+
+            self.conn.commit()
+        except sqlite3.IntegrityError as err:
+            if fail_on_existance:
+                raise err
+            else:
+                print(f"[WARN] Product '{title}' already exists!")
+        
+    def track_price(self, id: int, price: int, currency: str):
+        '''
+        Will add a new price only if the current one is different from the last one added, in chronological order.
+        '''
+
+        price_entry = {
+            "id": id,
+            "price": price,
+            "currency": currency,
+            "timestamp": datetime.now().isoformat()
+        }
+
+        cursor = self.conn.cursor()
+
+        cursor.execute(
+            '''
+            SELECT price FROM price_history
+            WHERE id = ?
+            ORDER BY timestamp DESC
+            LIMIT 1
+            ''',
+            (id,)
+        )
+        row = cursor.fetchone()
+        if row is None or row[0] != price:
+
+            cursor.execute(
+                '''
+                INSERT INTO price_history (id, price, currency, timestamp)
+                VALUES (:id, :price, :currency, :timestamp)
+                ''',
+                price_entry
+            )
+
+            self.conn.commit()
+
+            print(f"[INFO] Added new price entry of '{price}' '{currency}' for product ID '{id}'.")
+        else:
+            print(f"[INFO] Price not changed for product with ID '{id}'.")
+    
+    def get_price_history(self, id: int) -> list:
+
+        cursor = self.conn.cursor()
+
+        cursor.execute(
+            '''
+            SELECT price, currency, timestamp FROM price_history
+            WHERE id = ?
+            ORDER BY timestamp ASC
+            ''',
+            (id,)
+        )
+
+        rows = cursor.fetchall()
+        return rows
