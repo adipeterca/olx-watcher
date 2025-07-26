@@ -115,3 +115,25 @@ class DBController:
 
         rows = cursor.fetchall()
         return rows
+
+    def get_all_products(self) -> list[list]:
+        '''
+        Returns all product rows.
+
+        Each row is organized in ID, TITLE, DESCRIPTION, URL, ACTIVE.
+        '''
+
+        cursor = self.conn.cursor()
+        cursor.execute(
+            '''
+            SELECT id, title, description, url, active
+            FROM products
+            '''
+        )
+
+        rows = cursor.fetchall()
+
+        if len(rows) == 0:
+            raise RuntimeError("No products in the database.")
+
+        return rows 

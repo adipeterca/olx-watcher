@@ -10,8 +10,9 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 import dbctrl
+import utils
 
-VERSION = "1.0.0"
+VERSION = "1.2.0"
 
 def add_product(db: dbctrl.DBController, data: dict):
     db.add_product(
@@ -33,6 +34,19 @@ def update_price(db: dbctrl.DBController, data: dict):
         price=data["price"]["regularPrice"]["value"],
         currency=data["price"]["regularPrice"]["currencyCode"]
     )
+
+def update_all_prices(db: dbctrl.DBController):
+    rows = db.get_all_products()
+    for row in rows:
+        url = row[3]
+
+        data = utils.parse_url(url)
+        
+        db.track_price(
+            id=data["id"],
+            price=data["price"]["regularPrice"]["value"],
+            currency=data["price"]["regularPrice"]["currencyCode"]
+        )
 
 def get_price_history(db: dbctrl.DBController, data: dict):
     rows = db.get_price_history(data["id"])
@@ -69,51 +83,52 @@ def get_price_graph(db: dbctrl.DBController, data: dict):
 
 def main():
 
-    parser = argparse.ArgumentParser(description="OLX Watcher CLI tool.\nCheck out more at https://github.com/adipeterca/olx-watcher")
-    parser.add_argument("--url", required=True, help="URL to fetch")
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # 
+    # Parser setup
+    # 
+    parser = argparse.ArgumentParser(description="OLX Watcher CLI tool.\nCheck out more at https://github.com/adipeterca/olx-watcher") 
     parser.add_argument("--version", action="version", version=f"OLX Watcher {VERSION}")
 
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("--add", action="store_true", help="Add product to database")
-    group.add_argument("--update", action="store_true", help="Update price for product")
-    group.add_argument("--price-history", action="store_true", help="Check product price history in string format")
-    group.add_argument("--price-graph", action="store_true", help="Create a price history graph for the product")
+    main_group = parser.add_mutually_exclusive_group(required=True)
+    main_group.add_argument("--update-all-prices", action="store_true", help="Update all product prices")
+
+    main_group.add_argument("--url", help="URL to fetch")
+
+    action_group = parser.add_mutually_exclusive_group()
+    action_group.add_argument("--add", action="store_true", help="Add product to database")
+    action_group.add_argument("--update", action="store_true", help="Update price for product")
+    action_group.add_argument("--price-history", action="store_true", help="Check product price history in string format")
+    action_group.add_argument("--price-graph", action="store_true", help="Create a price history graph for the product")
 
     args = parser.parse_args()
 
-    response = requests.get(args.url)
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    script_tag = soup.find("script", {"type": "text/javascript", "id": "olx-init-config"})
-    if not script_tag:
-        print("Script tag not found")
-        exit()
-    script_content = script_tag.string or script_tag.text
-
-    json_str = script_content.split('"{\\"ad\\":{\\"ad\\":')[1].split(',\\"fragments')[0]
+    #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
     
-    json_str = json_str.replace('\\"', '"')
-
-    try:
-        data = json.loads(json_str)
-
-    except json.JSONDecodeError as e:
-        print("Failed to parse JSON:", e)
-
-    # Do stuff with the parsed data
     db = dbctrl.DBController()
 
-    if args.add:
-        add_product(db, data)
-    elif args.update:
-        update_price(db, data)
-    elif args.price_history:
-        get_price_history(db, data)
-    elif args.price_graph:
-        get_price_graph(db, data)
+    if args.url:
+        if not (args.add or args.update or args.price_history or args.price_graph):
+            parser.error("--url requires one of --add, --update, --price-history, or --price-graph")
+
+        data = utils.parse_url(args.url)
+
+        if args.add:
+            add_product(db, data)
+        elif args.update:
+            update_price(db, data)
+        elif args.price_history:
+            get_price_history(db, data)
+        elif args.price_graph:
+            get_price_graph(db, data)
+    elif args.update_all_prices:
+        update_all_prices(db)
 
 if __name__ == "__main__":
     main()
+
+
 
 
 '''
