@@ -10,7 +10,7 @@ from datetime import datetime
 import dbctrl
 import utils
 
-VERSION = "1.2.6"
+VERSION = "1.2.7"
 
 def add_product(db: dbctrl.DBController, data: dict):
     db.add_product(

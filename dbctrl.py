@@ -99,7 +99,6 @@ class DBController:
 
             logging.info(f"Added new price entry of '{price}' '{currency}' for product ID '{id}'.")
         else:
-            print("should print")
             logging.debug(f"Price not changed for product with ID '{id}'.")
     
     def mark_product_as_sold(self, id: int):
