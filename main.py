@@ -10,7 +10,7 @@ from datetime import datetime
 import dbctrl
 import utils
 
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 
 def add_product(db: dbctrl.DBController, data: dict):
     db.add_product(
@@ -100,7 +100,7 @@ def main():
 
     main_group.add_argument("--url", help="URL to fetch")
 
-    main_group.add_argument("--verbose", default="info", help="Verbosity level: debug / info / warning / error")
+    main_group.add_argument("--verbosity", default="info", help="Verbosity level: debug / info / warning / error")
 
     action_group = parser.add_mutually_exclusive_group()
     action_group.add_argument("--add", action="store_true", help="Add product to database")
