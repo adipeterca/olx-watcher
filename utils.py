@@ -8,8 +8,6 @@ class OlxProductNotFound(BaseException):
 
 def parse_url(url: str) -> dict:
     response = requests.get(url)
-    if "Acest anunț nu mai este disponibil" in response.text:
-        raise OlxProductNotFound
 
     soup = BeautifulSoup(response.text, "html.parser")
 
@@ -19,7 +17,11 @@ def parse_url(url: str) -> dict:
         exit()
     script_content = script_tag.string or script_tag.text
 
-    json_str = script_content.split('"{\\"ad\\":{\\"ad\\":')[1].split(',\\"fragments')[0]
+    try:
+        json_str = script_content.split('"{\\"ad\\":{\\"ad\\":')[1]
+        json_str = json_str.split(',\\"fragments')[0]
+    except IndexError:
+        raise OlxProductNotFound
 
     json_str = json_str.replace('\\"', '"')
 
