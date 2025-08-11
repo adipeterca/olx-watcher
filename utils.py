@@ -3,7 +3,7 @@ import json
 import logging
 from bs4 import BeautifulSoup
 
-class OlxProductNotFound : RuntimeError
+class OlxProductNotFound : BaseException
 
 def parse_url(url: str) -> dict:
     response = requests.get(url)
