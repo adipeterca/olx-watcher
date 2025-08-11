@@ -10,7 +10,7 @@ from datetime import datetime
 import dbctrl
 import utils
 
-VERSION = "1.2.3"
+VERSION = "1.2.4"
 
 def add_product(db: dbctrl.DBController, data: dict):
     db.add_product(
@@ -130,7 +130,11 @@ def main():
         if not (args.add or args.update or args.price_history or args.price_graph):
             parser.error("--url requires one of --add, --update, --price-history, or --price-graph")
 
-        data = utils.parse_url(args.url)
+        try:
+            data = utils.parse_url(args.url)
+        except utils.OlxProductNotFound:
+            print("Sorry, this item does not exist!")
+            exit(200)
 
         if args.add:
             add_product(db, data)
