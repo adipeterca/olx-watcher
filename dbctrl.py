@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import sqlite3
+import logging
 from datetime import datetime
 
 class DBController:
@@ -58,7 +59,7 @@ class DBController:
             if fail_on_existance:
                 raise err
             else:
-                print(f"[WARN] Product '{title}' already exists!")
+                logging.warning(f"Product '{title}' already exists!")
         
     def track_price(self, id: int, price: int, currency: str):
         '''
@@ -96,10 +97,31 @@ class DBController:
 
             self.conn.commit()
 
-            print(f"[INFO] Added new price entry of '{price}' '{currency}' for product ID '{id}'.")
+            logging.info(f"Added new price entry of '{price}' '{currency}' for product ID '{id}'.")
         else:
-            print(f"[INFO] Price not changed for product with ID '{id}'.")
+            logging.debug(f"Price not changed for product with ID '{id}'.")
     
+    def mark_product_as_sold(self, id: int):
+        '''
+        @id: product ID
+
+        Marks a product's "active" column as "0", meaning the item was sold.
+        Thus, no new price updates will be queried for this product.
+        '''
+        cursor = self.conn.cursor()
+
+        cursor.execute(
+            '''
+            UPDATE products
+            SET active = 0
+            WHERE id = ?
+            ''',
+            (id,)
+        )
+
+        if cursor.rowcount == 0:
+            logging.warning(f"Could not mark item with ID '{id}' as sold because it does not exist.")
+
     def get_price_history(self, id: int) -> list:
 
         cursor = self.conn.cursor()

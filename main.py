@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 
 import argparse
-import requests
-import json
+import logging
 
 import matplotlib.pyplot as plt
 
-from bs4 import BeautifulSoup
 from datetime import datetime
 
 import dbctrl
@@ -40,7 +38,10 @@ def update_all_prices(db: dbctrl.DBController):
     for row in rows:
         url = row[3]
 
-        data = utils.parse_url(url)
+        try:
+            data = utils.parse_url(url)
+        except utils.OlxProductNotFound:
+            continue
         
         db.track_price(
             id=data["id"],
@@ -49,13 +50,17 @@ def update_all_prices(db: dbctrl.DBController):
         )
 
 def get_price_history(db: dbctrl.DBController, data: dict):
+    '''
+    Output is intentionally handled by "print" - it must always show to the user, 
+    regardless of verbosity.
+    '''
     rows = db.get_price_history(data["id"])
 
     if len(rows) == 0:
-            print(f"[INFO] No prior data for product ID '{id}'.")
+            print(f"No prior data for product ID '{id}'.")
             return
         
-    print("Prices are order from oldest to newest:")
+    print("Prices are ordered from oldest to newest:")
     for row in rows:
         print(f"{row[0]} {row[1]} - {row[2]}")
 
@@ -95,6 +100,8 @@ def main():
 
     main_group.add_argument("--url", help="URL to fetch")
 
+    main_group.add_argument("--verbose", default="info", help="Verbosity level: debug / info / warning / error")
+
     action_group = parser.add_mutually_exclusive_group()
     action_group.add_argument("--add", action="store_true", help="Add product to database")
     action_group.add_argument("--update", action="store_true", help="Update price for product")
@@ -106,6 +113,17 @@ def main():
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
     
+    level = None
+    if args.verbosity == "debug": level = logging.DEBUG
+    elif args.verbosity == "info": level = logging.INFO
+    elif args.verbosity == "warning": level = logging.WARNING
+    else: level = logging.ERROR
+
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
     db = dbctrl.DBController()
 
     if args.url:
