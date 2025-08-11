@@ -10,7 +10,7 @@ from datetime import datetime
 import dbctrl
 import utils
 
-VERSION = "1.2.4"
+VERSION = "1.2.5"
 
 def add_product(db: dbctrl.DBController, data: dict):
     db.add_product(
@@ -94,13 +94,13 @@ def main():
     # 
     parser = argparse.ArgumentParser(description="OLX Watcher CLI tool.\nCheck out more at https://github.com/adipeterca/olx-watcher") 
     parser.add_argument("--version", action="version", version=f"OLX Watcher {VERSION}")
+    parser.add_argument("--verbosity", default="info", help="Verbosity level: debug / info / warning / error")
 
     main_group = parser.add_mutually_exclusive_group(required=True)
     main_group.add_argument("--update-all-prices", action="store_true", help="Update all product prices")
 
     main_group.add_argument("--url", help="URL to fetch")
 
-    main_group.add_argument("--verbosity", default="info", help="Verbosity level: debug / info / warning / error")
 
     action_group = parser.add_mutually_exclusive_group()
     action_group.add_argument("--add", action="store_true", help="Add product to database")
