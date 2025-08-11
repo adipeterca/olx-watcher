@@ -10,7 +10,7 @@ from datetime import datetime
 import dbctrl
 import utils
 
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 
 def add_product(db: dbctrl.DBController, data: dict):
     db.add_product(
@@ -145,15 +145,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-'''
-Known bugs & future features:
-1. Non existing items will throw errors.
-    1.1. How to fix:
-        * add a parameter called "--clean-up" which will query items to delete all non-active ones.
-        * experiment on an empty product page to see what the HTML looks like
-2. Add a "--graph" parameter which will generate a graph image for a product
-'''
